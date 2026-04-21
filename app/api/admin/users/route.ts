@@ -1,94 +1,91 @@
+// app/api/admin/users/route.ts
 import { dbConnect } from "@/database/db";
-import { User } from "@/models/User";
-import { Transaction } from "@/models/Transaction"; // Nishchit korun import ache
+import { Transaction } from "@/models/Transaction";
 import { NextResponse } from "next/server";
-import mongoose from "mongoose";
 
 export async function GET() {
   try {
     await dbConnect();
 
-    // Force register Transaction model (Next.js hot reload issue fix)
-    const transactionModel = mongoose.models.Transaction || Transaction;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const usersData = await User.aggregate([
+    const summary = await Transaction.aggregate([
       {
-        $lookup: {
-          from: "transactions", // MongoDB Compass-e check korun namti 'transactions' kina
-          localField: "_id",
-          foreignField: "userId",
-          as: "allTransactions",
-        }
+        // Date ke string format-e niye asha (YYYY-MM-DD) jate grouping kora jay
+        $addFields: {
+          dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
+        },
       },
       {
-        $project: {
-          name: 1,
-          email: 1,
-          role: 1,
-          // Ajker date onujayi filter
-          todaysTransactions: {
-            $filter: {
-              input: "$allTransactions",
-              as: "t",
-              cond: { $gte: ["$$t.createdAt", today] }
-            }
-          }
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          email: 1,
-          role: 1,
+        // User ebong Date - ei dui tar upor vitti kore group kora
+        $group: {
+          _id: { userId: "$userId", date: "$dateStr" },
           totalIncome: {
-            $ifNull: [
-              { $sum: { $map: {
-                input: { $filter: { input: "$todaysTransactions", as: "t", cond: { $eq: ["$$t.category", "income"] } } },
-                as: "item", in: "$item.amount"
-              } } },
-              0
-            ]
+            $sum: {
+              $cond: [
+                { $eq: ["$category", "income"] },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
           },
           totalCost: {
-            $ifNull: [
-              { $sum: { $map: {
-                input: { $filter: { input: "$todaysTransactions", as: "t", cond: { $and: [
-                  { $ne: ["$$t.category", "income"] },
-                  { $ne: ["$$t.category", "savings"] },
-                  { $ne: ["$$t.type", "withdraw"] }
-                ] } } },
-                as: "item", in: "$item.amount"
-              } } },
-              0
-            ]
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    { $ne: ["$category", "income"] },
+                    { $ne: ["$category", "savings"] },
+                  ],
+                },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
           },
           totalSavings: {
-            $ifNull: [
-              { $sum: { $map: {
-                input: { $filter: { input: "$todaysTransactions", as: "t", cond: { $and: [
-                  { $eq: ["$$t.category", "savings"] },
-                  { $ne: ["$$t.type", "withdraw"] }
-                ] } } },
-                as: "item", in: "$item.amount"
-              } } },
-              0
-            ]
-          }
-        }
+            $sum: {
+              $cond: [
+                { $eq: ["$category", "savings"] },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
+          },
+        },
       },
       {
-        $addFields: {
-          netBalance: { $subtract: ["$totalIncome", "$totalCost"] }
-        }
-      }
+        // User details join kora
+        $lookup: {
+          from: "users",
+          localField: "_id.userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: "$userDetails" },
+      {
+        $project: {
+          _id: 0,
+          userId: "$_id.userId",
+          date: "$_id.date",
+          name: "$userDetails.name",
+          email: "$userDetails.email",
+          role: "$userDetails.role",
+          totalIncome: 1,
+          totalCost: 1,
+          totalSavings: 1,
+          netBalance: {
+            $subtract: [
+              "$totalIncome",
+              { $add: ["$totalCost", "$totalSavings"] },
+            ],
+          },
+        },
+      },
+      { $sort: { date: -1 } }, // Newest date upore thakbe
     ]);
 
-    return NextResponse.json(usersData);
+    return NextResponse.json(summary);
   } catch (error) {
-    console.error("Admin Aggregation Error:", error);
-    return NextResponse.json({ error: "Server Error" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
