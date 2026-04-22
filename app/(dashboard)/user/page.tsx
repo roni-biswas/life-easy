@@ -12,47 +12,54 @@ import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Dashboard",
-  description: "Overview of your financial activity, income, expenses and savings at a glance.",
-}
+  description:
+    "Overview of your financial activity, income, expenses and savings at a glance.",
+};
 
 export default async function UserHomePage() {
   // check user are logged in
-  const session = await getServerSession(authOptions)
-  if (!session) redirect('/auth')
+  const session = await getServerSession(authOptions);
+  if (!session) redirect("/auth");
 
   // connect to database
-  await dbConnect()
+  await dbConnect();
 
   // today date logic
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
   const endOfDay = new Date();
-  endOfDay.setHours(23, 59, 59, 999)
+  endOfDay.setHours(23, 59, 59, 999);
 
   // Fetch today's data from database
   const todayAllTransactions = await Transaction.find({
     userId: session.user.id,
-    date: { $gte: startOfDay, $lte: endOfDay }
-  })
+    date: { $gte: startOfDay, $lte: endOfDay },
+  });
 
-  // summary logic
+  // SUMMARY LOGIC (UPDATED)
   let income = 0;
   let cost = 0;
 
-  todayAllTransactions.forEach(item => {
+  todayAllTransactions.forEach((item) => {
     const amount = Number(item.amount) || 0;
-    if (item.category === 'income') {
+
+    // Income
+    if (item.category === "income") {
       income += amount;
-    } else {
+    }
+    // Category (e.g. food, medical)
+    else if (item.type !== "withdraw") {
       cost += amount;
     }
-  })
+  });
+
   const balance = income - cost;
 
   const rawData = await Transaction.find({
     userId: new mongoose.Types.ObjectId(session.user.id),
-    date: { $gte: startOfDay, $lte: endOfDay }
+    date: { $gte: startOfDay, $lte: endOfDay },
+    type: { $ne: "withdraw" },
   })
     .sort({ createdAt: -1 })
     .limit(5)
@@ -60,15 +67,10 @@ export default async function UserHomePage() {
 
   const recentHistory = JSON.parse(JSON.stringify(rawData));
 
-
   return (
     <div className="space-y-6">
       {/* 1. Header Cards */}
-      <SummaryCards
-        income={income}
-        cost={cost}
-        balance={balance}
-      />
+      <SummaryCards income={income} cost={cost} balance={balance} />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
         {/* 2. Quick Add Section (Span 3 for layout) */}
@@ -83,9 +85,9 @@ export default async function UserHomePage() {
         <div className="lg:col-span-4">
           <div className="bg-white dark:bg-zinc-900 border rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Today's History</h2>
+              <h2 className="text-lg font-semibold">Today&apos;s History</h2>
               <button className="text-sm text-blue-600 hover:underline">
-                <Link href={'/user/history'}>View All</Link>
+                <Link href={"/user/history"}>View All</Link>
               </button>
             </div>
             <RecentTransactions data={recentHistory} />

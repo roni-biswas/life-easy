@@ -7,22 +7,19 @@ import mongoose from "mongoose";
 
 export async function GET() {
   try {
-    // 1. User Session Check
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = session.user.id; // Logged-in user-er ID
+    const userId = session.user.id;
     const userObjectId = new mongoose.Types.ObjectId(userId);
 
     await dbConnect();
 
-    // 2. Aggregation for Monthly Data (ONLY for this user)
+    // 1. Monthly Stats (Income vs Total Deductions)
     const monthlyStats = await Transaction.aggregate([
-      {
-        $match: { userId: userObjectId },
-      },
+      { $match: { userId: userObjectId } },
       {
         $group: {
           _id: {
@@ -38,13 +35,19 @@ export async function GET() {
               ],
             },
           },
+          // Expense + Savings (Deductions)
           expense: {
             $sum: {
               $cond: [
                 {
-                  $and: [
-                    { $ne: ["$category", "income"] },
-                    { $ne: ["$category", "savings"] },
+                  $or: [
+                    {
+                      $and: [
+                        { $ne: ["$category", "income"] },
+                        { $ne: ["$type", "withdraw"] },
+                      ],
+                    },
+                    { $eq: ["$category", "savings"] }, // Explicitly adding savings
                   ],
                 },
                 { $convert: { input: "$amount", to: "double", onError: 0 } },
@@ -57,12 +60,13 @@ export async function GET() {
       { $sort: { "_id.year": 1, "_id.month": 1 } },
     ]);
 
-    // 3. Aggregation for Category Breakdown (ONLY for this user)
+    // 2. Category Breakdown (Including Savings as a Category)
     const categoryStats = await Transaction.aggregate([
       {
         $match: {
-          userId: userObjectId, // SECURITY
-          category: { $nin: ["income", "savings"] },
+          userId: userObjectId,
+          category: { $ne: "income" },
+          type: { $ne: "withdraw" }, // Withdraw analytics e asbe na, sudhu deposit savings asbe
         },
       },
       {
@@ -75,7 +79,6 @@ export async function GET() {
       },
     ]);
 
-    // 4. Format Data for Recharts
     const chartData = monthlyStats.map((stat) => ({
       name: new Date(2000, stat._id.month - 1).toLocaleString("default", {
         month: "short",

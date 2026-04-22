@@ -30,6 +30,7 @@ interface TransactionRow {
   totalIncome: number;
   totalCost: number;
   totalSavings: number;
+  totalWithdraw: number;
   netBalance: number;
 }
 
@@ -204,6 +205,7 @@ export default function AdminDashboard() {
                   <TableHead className="text-right">Income</TableHead>
                   <TableHead className="text-right">Cost</TableHead>
                   <TableHead className="text-right">Savings</TableHead>
+                  <TableHead className="text-right">Withdrawals</TableHead>
                   <TableHead className="text-right font-bold border-l">
                     Remaining
                   </TableHead>
@@ -220,18 +222,21 @@ export default function AdminDashboard() {
                         {row.name}
                       </TableCell>
                       <TableCell className="text-right text-green-600 font-medium font-mono">
-                        ৳{row.totalIncome}
+                        {row.totalIncome}
                       </TableCell>
                       <TableCell className="text-right text-red-500 font-mono">
-                        ৳{row.totalCost}
+                        {row.totalCost}
+                      </TableCell>
+                      <TableCell className="text-right text-red-500 font-mono">
+                        {row.totalSavings}
                       </TableCell>
                       <TableCell className="text-right text-blue-500 font-mono">
-                        ৳{row.totalSavings}
+                        {Math.abs(row.totalWithdraw).toLocaleString()}
                       </TableCell>
                       <TableCell
                         className={`text-right font-bold border-l font-mono ${row.netBalance >= 0 ? "text-green-700 bg-green-50/30 dark:bg-black/20" : "text-red-700 bg-red-50/30 dark:bg-black/20"}`}
                       >
-                        ৳{row.netBalance}
+                        {row.netBalance}
                       </TableCell>
                     </TableRow>
                   ))

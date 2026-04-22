@@ -7,10 +7,11 @@ import { Transaction } from "@/models/Transaction";
 
 export async function GET() {
   try {
-    await dbConnect()
+    await dbConnect();
 
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!session?.user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const now = new Date();
@@ -19,57 +20,60 @@ export async function GET() {
 
     // Savings Stats Calculate
     const stats = await Transaction.aggregate([
-  { 
-    $match: { 
-      userId: new mongoose.Types.ObjectId(userId),
-      category: "savings" 
-    } 
-  },
-  {
-    $group: {
-      _id: null,
-      // Total Net Balance
-      total: { 
-        $sum: { 
-          $cond: [
-            { $gt: [{ $toDouble: "$amount" }, 0] }, 
-            { $toDouble: "$amount" }, 
-            0
-          ] 
-        } 
+      {
+        $match: {
+          userId: new mongoose.Types.ObjectId(userId),
+          category: "savings",
+        },
       },
+      {
+        $group: {
+          _id: null,
+          // Total Net Balance
+          total: {
+            $sum: {
+              $cond: [
+                { $gt: [{ $toDouble: "$amount" }, 0] },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
+          },
 
-      // Today's Savings
-      today: {
-        $sum: {
-          $cond: [
-            { $gte: ["$date", startOfDay] },
-            { $toDouble: "$amount" },
-            0
-          ]
-        }
+          // Today's Savings
+          today: {
+            $sum: {
+              $cond: [
+                { $gte: ["$date", startOfDay] },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
+          },
+
+          // This Month: deposit or withdraw will be calculate
+          month: {
+            $sum: {
+              $cond: [
+                { $gte: ["$date", startOfMonth] },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
+          },
+        },
       },
-
-      // This Month: deposit or withdraw will be calculate
-      month: {
-        $sum: {
-          $cond: [
-            { $gte: ["$date", startOfMonth] },
-            { $toDouble: "$amount" },
-            0
-          ]
-        }
-      }
-    }
-  }
-]);
+    ]);
 
     // ২. Savings History (Latest first)
-    const history = await Transaction.find({ userId, category: "savings" }).sort({ date: -1 });
+    const history = await Transaction.find({
+      userId,
+      category: "savings",
+    }).sort({ date: -1 });
 
     return NextResponse.json({
       stats: stats[0] || { total: 0, today: 0, month: 0 },
-      history
+      history,
     });
   } catch (error) {
     return NextResponse.json({ error: "Server Error" }, { status: 500 });

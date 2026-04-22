@@ -1,4 +1,3 @@
-// app/api/admin/users/route.ts
 import { dbConnect } from "@/database/db";
 import { Transaction } from "@/models/Transaction";
 import { NextResponse } from "next/server";
@@ -9,15 +8,14 @@ export async function GET() {
 
     const summary = await Transaction.aggregate([
       {
-        // Date ke string format-e niye asha (YYYY-MM-DD) jate grouping kora jay
         $addFields: {
           dateStr: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
         },
       },
       {
-        // User ebong Date - ei dui tar upor vitti kore group kora
         $group: {
           _id: { userId: "$userId", date: "$dateStr" },
+          // Total Income
           totalIncome: {
             $sum: {
               $cond: [
@@ -27,6 +25,7 @@ export async function GET() {
               ],
             },
           },
+          // Total Cost
           totalCost: {
             $sum: {
               $cond: [
@@ -34,6 +33,7 @@ export async function GET() {
                   $and: [
                     { $ne: ["$category", "income"] },
                     { $ne: ["$category", "savings"] },
+                    { $ne: ["$type", "withdraw"] },
                   ],
                 },
                 { $toDouble: "$amount" },
@@ -41,10 +41,26 @@ export async function GET() {
               ],
             },
           },
+          // Total Savings
           totalSavings: {
             $sum: {
               $cond: [
-                { $eq: ["$category", "savings"] },
+                {
+                  $and: [
+                    { $eq: ["$category", "savings"] },
+                    { $eq: ["$type", "deposit"] },
+                  ],
+                },
+                { $toDouble: "$amount" },
+                0,
+              ],
+            },
+          },
+          // Total Withdraw
+          totalWithdraw: {
+            $sum: {
+              $cond: [
+                { $eq: ["$type", "withdraw"] },
                 { $toDouble: "$amount" },
                 0,
               ],
@@ -53,7 +69,6 @@ export async function GET() {
         },
       },
       {
-        // User details join kora
         $lookup: {
           from: "users",
           localField: "_id.userId",
@@ -73,6 +88,8 @@ export async function GET() {
           totalIncome: 1,
           totalCost: 1,
           totalSavings: 1,
+          totalWithdraw: 1,
+          // Net Balance calculation
           netBalance: {
             $subtract: [
               "$totalIncome",
@@ -81,11 +98,15 @@ export async function GET() {
           },
         },
       },
-      { $sort: { date: -1 } }, // Newest date upore thakbe
+      { $sort: { date: -1 } },
     ]);
 
     return NextResponse.json(summary);
   } catch (error) {
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
+    console.error("Admin Summary Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 },
+    );
   }
 }
