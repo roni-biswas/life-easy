@@ -17,18 +17,25 @@ import toast from "react-hot-toast";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+
 export default function SavingsClient() {
   const [data, setData] = useState<any>(null);
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [desc, setDesc] = useState("");
   const [loading, setLoading] = useState(false);
   const { data: session } = useSession();
+
+  // redirect if no session
   if (!session) redirect("/auth");
 
   const fetchData = async () => {
-    const res = await fetch("/api/savings");
-    const json = await res.json();
-    setData(json);
+    try {
+      const res = await fetch("/api/savings");
+      const json = await res.json();
+      setData(json);
+    } catch (err) {
+      toast.error("Failed to load savings data");
+    }
   };
 
   useEffect(() => {
@@ -38,7 +45,7 @@ export default function SavingsClient() {
   const handleWithdraw = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Safety Check: Total balance-er beshi withdraw kora jabe na
+    // Net Balance-er beshi withdraw kora jabe na
     if (Number(withdrawAmount) > data.stats.total) {
       return toast.error("Insufficient savings balance!");
     }
@@ -69,44 +76,51 @@ export default function SavingsClient() {
     );
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto min-h-screen">
+    <div className="space-y-6 max-w-7xl mx-auto min-h-screen p-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Savings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Savings Management
+        </h1>
         <Badge
           variant="outline"
-          className="light:bg-white px-4 py-1 text-sm font-medium shadow-sm"
+          className="px-4 py-1 text-sm font-medium shadow-sm"
         >
           Currency: BDT (৳)
         </Badge>
       </div>
 
-      {/* --- 1. Stats Cards --- */}
+      {/* --- 1. Stats Cards (Requirement Implementation) --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-none shadow-md light:bg-white">
+        {/* Today's Savings: Only Deposits */}
+        <Card className="border-none shadow-md">
           <CardHeader className="pb-2 text-muted-foreground text-sm font-medium flex flex-row items-center justify-between">
-            Today&apos;s Savings{" "}
+            Today&apos;s Deposits
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
-          <CardContent className="text-2xl font-bold text-green-600">
-            {data.stats.today.toLocaleString()}
+          <CardContent className="text-2xl font-bold text-green-600 font-mono">
+            ৳{data.stats.today.toLocaleString()}
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-md light:bg-white">
+        {/* Month Savings: Only Deposits */}
+        <Card className="border-none shadow-md">
           <CardHeader className="pb-2 text-muted-foreground text-sm font-medium flex flex-row items-center justify-between">
-            This Month <TrendingUp className="h-4 w-4 text-blue-500" />
+            Monthly Deposits
+            <TrendingUp className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent className="text-2xl font-bold text-blue-600">
-            {data.stats.month.toLocaleString()}
+          <CardContent className="text-2xl font-bold text-blue-600 font-mono">
+            ৳{data.stats.month.toLocaleString()}
           </CardContent>
         </Card>
 
+        {/* Net Total: Deposits - Withdrawals */}
         <Card className="border-none shadow-md bg-slate-900 text-white">
           <CardHeader className="pb-2 text-slate-400 text-sm font-medium flex flex-row items-center justify-between">
-            Total Net Balance <PiggyBank className="h-4 w-4 text-pink-400" />
+            Savings Net Balance
+            <PiggyBank className="h-4 w-4 text-pink-400" />
           </CardHeader>
-          <CardContent className="text-3xl font-bold">
-            {data.stats.total.toLocaleString()}
+          <CardContent className="text-3xl font-bold font-mono">
+            ৳{data.stats.total.toLocaleString()}
           </CardContent>
         </Card>
       </div>
@@ -116,7 +130,7 @@ export default function SavingsClient() {
         <Card className="lg:col-span-1 border-none shadow-md h-fit">
           <CardHeader>
             <CardTitle className="text-red-600 flex items-center gap-2 text-lg">
-              <ArrowDownCircle className="h-5 w-5" /> Withdraw
+              <ArrowDownCircle className="h-5 w-5" /> Quick Withdraw
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -148,10 +162,10 @@ export default function SavingsClient() {
               <Button
                 type="submit"
                 variant="destructive"
-                className="w-full shadow-lg shadow-red-200 dark:shadow-red-50/0"
+                className="w-full shadow-lg"
                 disabled={loading}
               >
-                {loading ? "Processing..." : "Withdraw Now"}
+                {loading ? "Processing..." : "Withdraw Balance"}
               </Button>
             </form>
           </CardContent>
@@ -159,69 +173,61 @@ export default function SavingsClient() {
 
         {/* --- 3. History Table --- */}
         <Card className="lg:col-span-3 border-none shadow-md overflow-hidden">
-          <CardHeader className="light:bg-white border-b border-slate-100">
+          <CardHeader className="border-b border-slate-100">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <History className="h-5 w-5text-slate-500" /> Transaction History
+              <History className="h-5 w-5 text-slate-500" /> Savings Logs
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader className="bg-slate-50/50 dark:bg-black/50">
-                <TableRow>
-                  <TableHead className="w-30">Date</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.history.map((item: any) => (
-                  <TableRow
-                    key={item._id}
-                    className="hover:bg-slate-50/50 dark:hover:bg-black/30 transition-colors"
-                  >
-                    <TableCell className="text-xs text-muted-foreground font-medium">
-                      {new Date(item.date).toLocaleDateString("en-GB")}
-                    </TableCell>
-                    <TableCell className="max-w-30 md:max-w-xs lg:max-w-none">
-                      <div
-                        className="font-medium text-slate-700 dark:text-slate-400 truncate"
-                        title={item.title}
-                      >
-                        {item.title}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {item.amount < 0 ? (
-                        <Badge
-                          variant="secondary"
-                          className="bg-red-50 text-red-600 border-none"
-                        >
-                          Withdraw
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="secondary"
-                          className="bg-green-50 text-green-600 border-none"
-                        >
-                          Deposit
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell
-                      className={`text-right font-bold ${item.amount < 0 ? "text-red-500" : "text-green-600"}`}
-                    >
-                      {item.amount < 0
-                        ? `-${Math.abs(item.amount)}`
-                        : `+${item.amount}`}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50 dark:bg-black/50">
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data.history.map((item: any) => (
+                    <TableRow
+                      key={item._id}
+                      className="hover:bg-slate-50 transition-colors"
+                    >
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {new Date(item.date).toLocaleDateString("en-GB")}
+                      </TableCell>
+                      <TableCell className="font-medium text-slate-700 truncate max-w-50">
+                        {item.title}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="secondary"
+                          className={
+                            item.type === "withdraw"
+                              ? "bg-red-50 text-red-600 border-none"
+                              : "bg-green-50 text-green-600 border-none"
+                          }
+                        >
+                          {item.type === "withdraw" ? "Withdraw" : "Deposit"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell
+                        className={`text-right font-bold font-mono ${item.type === "withdraw" ? "text-red-500" : "text-green-600"}`}
+                      >
+                        {item.type === "withdraw"
+                          ? `${item.amount}`
+                          : `+${item.amount}`}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
             {data.history.length === 0 && (
               <div className="text-center py-10 text-muted-foreground text-sm italic">
-                No transactions yet.
+                No savings records found.
               </div>
             )}
           </CardContent>

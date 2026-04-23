@@ -13,49 +13,55 @@ export async function GET() {
     if (!session?.user?.id)
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const userId = new mongoose.Types.ObjectId(session.user.id);
+    const userId = new mongoose.Types.ObjectId(session.user.id as string);
     const now = new Date();
-    const startOfDay = new Date(now.setHours(0, 0, 0, 0));
+
+    // Date boundaries set kora
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     // Savings Stats Calculate
     const stats = await Transaction.aggregate([
       {
         $match: {
-          userId: new mongoose.Types.ObjectId(userId),
+          userId: userId,
           category: "savings",
         },
       },
       {
         $group: {
           _id: null,
-          // Total Net Balance
-          total: {
-            $sum: {
-              $cond: [
-                { $gt: [{ $toDouble: "$amount" }, 0] },
-                { $toDouble: "$amount" },
-                0,
-              ],
-            },
-          },
+          // Net Total Balance:
+          total: { $sum: { $toDouble: "$amount" } },
 
-          // Today's Savings
+          // Today's Savings:
           today: {
             $sum: {
               $cond: [
-                { $gte: ["$date", startOfDay] },
+                {
+                  $and: [
+                    { $gte: ["$date", startOfDay] },
+                    { $eq: ["$type", "deposit"] },
+                  ],
+                },
                 { $toDouble: "$amount" },
                 0,
               ],
             },
           },
 
-          // This Month: deposit or withdraw will be calculate
+          // This Month Savings
           month: {
             $sum: {
               $cond: [
-                { $gte: ["$date", startOfMonth] },
+                {
+                  $and: [
+                    { $gte: ["$date", startOfMonth] },
+                    { $eq: ["$type", "deposit"] },
+                  ],
+                },
                 { $toDouble: "$amount" },
                 0,
               ],
@@ -65,7 +71,7 @@ export async function GET() {
       },
     ]);
 
-    // ২. Savings History (Latest first)
+    // Savings History (Latest first)
     const history = await Transaction.find({
       userId,
       category: "savings",
@@ -76,6 +82,7 @@ export async function GET() {
       history,
     });
   } catch (error) {
+    console.error("Savings API Error:", error);
     return NextResponse.json({ error: "Server Error" }, { status: 500 });
   }
 }

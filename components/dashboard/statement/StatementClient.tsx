@@ -55,33 +55,21 @@ export default function StatementClient() {
       const res = await fetch(url);
       const data = await res.json();
 
-      // ADVANCED DAILY GROUPING LOGIC (Updated for Specific Type Check)
       const groups: any = {};
-
       data.forEach((t: any) => {
-        // Date ke string format-e neya
         const date = new Date(t.date).toLocaleDateString("en-GB");
-
         if (!groups[date]) {
           groups[date] = { date, income: 0, cost: 0, withdraw: 0, savings: 0 };
         }
 
         const amt = Math.abs(Number(t.amount));
-
-        // ১. Income calculation (Direct Category check)
         if (t.category === "income") {
           groups[date].income += amt;
-        }
-        // ২. Savings calculation (Category savings hote hobe ebong Type deposit hote hobe)
-        else if (t.category === "savings" && t.type === "deposit") {
+        } else if (t.category === "savings" && t.type === "deposit") {
           groups[date].savings += amt;
-        }
-        // ৩. Withdraw calculation (Database-er type check)
-        else if (t.type === "withdraw") {
+        } else if (t.type === "withdraw") {
           groups[date].withdraw += amt;
-        }
-        // ৪. Everything else is Cost (Personal, Medicine, etc. jader type deposit kintu category savings na)
-        else {
+        } else {
           groups[date].cost += amt;
         }
       });
@@ -95,114 +83,184 @@ export default function StatementClient() {
   };
 
   const downloadPDF = () => {
-    if (activeFilter === "all") {
-      return toast.error("Please select 1 Month or 3 Months statement.");
-    }
+    try {
+      if (activeFilter === "all") {
+        return toast.error("Please select 1 Month or 3 Months statement.");
+      }
+      if (dailyData.length === 0) {
+        return toast.error("No data available to download.");
+      }
 
-    const doc = new jsPDF({
-      orientation: "portrait",
-      unit: "mm",
-      format: "a4",
-    });
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const userName = session?.user?.name || "User Name";
-    const userEmail = session?.user?.email || "user@email.com";
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
 
-    doc.setFontSize(20);
-    doc.setTextColor(30, 41, 59);
-    doc.text("Life Easy - Statement", 14, 20);
+      // --- Calculations ---
+      let totalIncome = 0;
+      let totalCost = 0;
+      let totalSavingsDep = 0;
+      let totalWithdraw = 0;
 
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text(`Name: ${userName}`, 14, 28);
-    doc.text(`Email: ${userEmail}`, 14, 33);
+      const tableRows = dailyData.map((day) => {
+        totalIncome += day.income;
+        totalCost += day.cost;
+        totalSavingsDep += day.savings;
+        totalWithdraw += day.withdraw;
+        const netBalance = day.income - (day.cost + day.savings);
 
-    doc.text(
-      `Period: ${dateRange.start} - ${dateRange.end}`,
-      pageWidth - 14,
-      28,
-      { align: "right" },
-    );
-    doc.text(`Type: ${activeFilter}`, pageWidth - 14, 33, { align: "right" });
+        return [
+          day.date,
+          day.income.toLocaleString(),
+          day.cost.toLocaleString(),
+          day.savings.toLocaleString(),
+          day.withdraw.toLocaleString(),
+          netBalance.toLocaleString(),
+        ];
+      });
 
-    doc.setDrawColor(200);
-    doc.line(14, 38, pageWidth - 14, 38);
-
-    // DATA CALCULATION
-    let totalIncome = 0;
-    let totalCost = 0;
-    let totalWithdraw = 0;
-    let totalSavings = 0;
-
-    const tableRows = dailyData.map((day) => {
-      totalIncome += day.income;
-      totalCost += day.cost;
-      totalWithdraw += day.withdraw;
-      totalSavings += day.savings;
-
-      // Net Balance = Income - (Khoroch + Savings e joma kora taka)
-      const netBalance = day.income - (day.cost + day.savings);
-
-      return [
-        day.date,
-        `${day.income.toLocaleString()}`,
-        `${day.cost.toLocaleString()}`,
-        `${day.savings.toLocaleString()}`,
-        `${day.withdraw.toLocaleString()}`,
-        `${netBalance.toLocaleString()}`,
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 45,
-      head: [
-        ["Date", "Income", "Costs", "Savings", "Withdraws", "Net Balance"],
-      ],
-      body: tableRows,
-      foot: [
-        [
-          "TOTAL",
-          `${totalIncome.toLocaleString()}`,
-          `${totalCost.toLocaleString()}`,
-          `${totalSavings.toLocaleString()}`,
-          `${totalWithdraw.toLocaleString()}`,
-          `${(totalIncome - (totalCost + totalSavings)).toLocaleString()}`,
+      // --- Table Logic ---
+      autoTable(doc, {
+        startY: 45,
+        head: [
+          ["Date", "Income", "Costs", "Savings", "Withdrawals", "Net Balance"],
         ],
-      ],
-      margin: { left: 14, right: 14 },
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fillColor: [30, 41, 59], textColor: 255 },
-      footStyles: {
-        fillColor: [241, 245, 249],
-        textColor: [30, 41, 59],
-        fontStyle: "bold",
-      },
-      theme: "grid",
-      didDrawPage: (data) => {
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text(
-          `Generated by Roni Biswas | ${new Date().toLocaleDateString()}`,
-          14,
-          pageHeight - 10,
-        );
-        const str = "Page " + doc.getNumberOfPages();
-        doc.text(str, pageWidth - 25, pageHeight - 10);
-      },
-    });
+        body: tableRows,
+        // --- Total Row Calculation ---
+        foot: [
+          [
+            "TOTAL",
+            totalIncome.toLocaleString(),
+            totalCost.toLocaleString(),
+            totalSavingsDep.toLocaleString(),
+            totalWithdraw.toLocaleString(),
+            (totalIncome - (totalCost + totalSavingsDep)).toLocaleString(),
+          ],
+        ],
+        showFoot: "lastPage",
+        theme: "grid",
+        headStyles: {
+          fillColor: [30, 41, 59],
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+        },
+        footStyles: {
+          fillColor: [241, 245, 249],
+          textColor: [30, 41, 59],
+          fontStyle: "bold",
+        },
+        styles: { fontSize: 8, cellPadding: 3 },
+        margin: { top: 45, bottom: 25 },
 
-    doc.save(`Statement_${activeFilter.replace(/\s+/g, "_")}.pdf`);
+        didDrawPage: (data) => {
+          // --- Sticky Header --
+          doc.setFontSize(22);
+          doc.setTextColor(30, 41, 59);
+          doc.setFont("helvetica", "bold");
+          doc.text("LIFE EASY", 14, 20);
+
+          doc.setFontSize(10);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(100);
+          doc.text("FINANCIAL STATEMENT", 14, 26);
+
+          doc.setFontSize(9);
+          doc.text(`Name: ${session?.user?.name || "User"}`, 14, 34);
+          doc.text(`Period: ${dateRange.start} - ${dateRange.end}`, 14, 39);
+
+          doc.text(`Filter: ${activeFilter}`, pageWidth - 14, 34, {
+            align: "right",
+          });
+          doc.text(
+            `Date: ${new Date().toLocaleDateString()}`,
+            pageWidth - 14,
+            39,
+            { align: "right" },
+          );
+
+          doc.setDrawColor(200);
+          doc.line(14, 42, pageWidth - 14, 42);
+
+          // --- Sticky Footer (Proti Page-e thakbe) ---
+          const footerY = pageHeight - 10;
+          doc.setFontSize(9);
+          doc.setTextColor(150);
+          doc.setFont("helvetica", "normal");
+          doc.text("Generated by ", 14, footerY);
+
+          // Blue Link
+          doc.setTextColor(37, 99, 235);
+          doc.setFont("helvetica", "bold");
+          doc.text("Roni Biswas", 34, footerY);
+          doc.link(34, footerY - 3, 20, 5, {
+            url: "https://github.com/roni-biswas",
+          });
+
+          // Page Number
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(150);
+          doc.text(` | Page ${data.pageNumber}`, 53, footerY);
+        },
+      });
+
+      // --- Summary Section (Deposit - Withdraw) ---
+      let finalY = (doc as any).lastAutoTable.finalY + 12;
+
+      if (finalY > pageHeight - 40) {
+        doc.addPage();
+        finalY = 50;
+      }
+
+      const netSavingsBalance = totalSavingsDep - totalWithdraw;
+
+      doc.setFillColor(248, 250, 252);
+      doc.rect(14, finalY - 5, pageWidth - 28, 25, "F");
+
+      doc.setFontSize(11);
+      doc.setTextColor(71, 85, 105);
+      doc.setFont("helvetica", "bold");
+      doc.text("Savings Summary (Net):", 20, finalY + 5);
+
+      doc.setFontSize(13);
+      if (netSavingsBalance >= 0) {
+        doc.setTextColor(5, 150, 105); // Green
+      } else {
+        doc.setTextColor(220, 38, 38); // Red
+      }
+      doc.text(
+        `Balance: ${netSavingsBalance.toLocaleString()} BDT`,
+        20,
+        finalY + 13,
+      );
+
+      doc.setFontSize(9);
+      doc.setTextColor(148, 163, 184);
+      doc.setFont("helvetica", "normal");
+      doc.text(
+        `(Total Deposits: ${totalSavingsDep.toLocaleString()} | Total Withdrawals: ${totalWithdraw.toLocaleString()})`,
+        20,
+        finalY + 19,
+      );
+
+      doc.save(`Statement_${activeFilter.replace(/\s+/g, "_")}.pdf`);
+      toast.success("PDF Downloaded!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Could not generate PDF");
+    }
   };
 
   if (!mounted) return null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6 p-4">
       <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
         <h1 className="text-3xl font-bold tracking-tight">Statement</h1>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <Button
             variant={activeFilter === "all" ? "default" : "outline"}
             onClick={() => fetchStatement()}
@@ -225,9 +283,9 @@ export default function StatementClient() {
           <Button
             onClick={downloadPDF}
             disabled={activeFilter === "all"}
-            className={`${activeFilter === "all" ? "bg-slate-300" : "bg-blue-600 hover:bg-blue-700"}`}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            <Download className="mr-2 h-4 w-4" /> PDF
+            <Download className="mr-2 h-4 w-4" /> Export PDF
           </Button>
         </div>
       </div>
@@ -240,7 +298,7 @@ export default function StatementClient() {
                 <TableHead>Date</TableHead>
                 <TableHead>Income</TableHead>
                 <TableHead>Costs</TableHead>
-                <TableHead>Savings</TableHead> {/* UI Table head */}
+                <TableHead>Savings (Dep)</TableHead>
                 <TableHead>Withdrawals</TableHead>
                 <TableHead className="text-right">Net Balance</TableHead>
               </TableRow>
@@ -256,16 +314,18 @@ export default function StatementClient() {
                 dailyData.map((day, i) => (
                   <TableRow
                     key={i}
-                    className="hover:bg-slate-50/50 dark:hover:bg-black/30 transition-colors"
+                    className="hover:bg-slate-50/50 transition-colors"
                   >
-                    <TableCell className="font-medium">{day.date}</TableCell>
-                    <TableCell className="text-green-600">
+                    <TableCell className="font-medium text-xs">
+                      {day.date}
+                    </TableCell>
+                    <TableCell className="text-green-600 font-medium">
                       {day.income.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-red-500">
                       {day.cost.toLocaleString()}
                     </TableCell>
-                    <TableCell className="text-blue-500 font-medium">
+                    <TableCell className="text-blue-500">
                       {day.savings.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-orange-500">
@@ -285,10 +345,10 @@ export default function StatementClient() {
       </Card>
 
       {activeFilter === "all" && (
-        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-900/10 p-4 rounded-lg border border-amber-200 dark:border-amber-900/20 text-sm shadow-sm">
+        <div className="flex items-center gap-2 text-amber-600 bg-amber-50 p-4 rounded-lg border border-amber-200 text-sm shadow-sm">
           <AlertCircle className="h-4 w-4" />
-          PDF download is disabled for 'All' data. Please select 1 or 3 months
-          for full report.
+          PDF download is disabled for &apos;All&apos; data. Please select 1 or
+          3 months.
         </div>
       )}
     </div>

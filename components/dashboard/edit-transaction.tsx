@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,11 +9,23 @@ import { transactionSchema } from "@/lib/validations";
 import { Field, FieldGroup } from "../ui/field";
 import { Label } from "../ui/label";
 import { Input } from "../ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 
-export function EditTransactionForm({ transaction, onSuccess }: { transaction: any, onSuccess: (data: any) => void }) {
+export function EditTransactionForm({
+  transaction,
+  onSuccess,
+}: {
+  transaction: any;
+  onSuccess: (data: any) => void;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +35,7 @@ export function EditTransactionForm({ transaction, onSuccess }: { transaction: a
     setValue,
     watch,
     reset,
-    formState: { errors }
+    formState: { errors },
   } = useForm<z.infer<typeof transactionSchema>>({
     resolver: zodResolver(transactionSchema),
     defaultValues: {
@@ -71,33 +83,29 @@ export function EditTransactionForm({ transaction, onSuccess }: { transaction: a
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-2">
       <FieldGroup className="space-y-4">
-        
         {/* Description */}
         <Field>
           <Label>Title</Label>
-          <Input
-            {...register("title")}
-            placeholder="Ex: Office Rent"
-          />
-          {errors.title && <p className="text-red-500 text-[11px]">{errors.title.message}</p>}
+          <Input {...register("title")} placeholder="Ex: Office Rent" />
+          {errors.title && (
+            <p className="text-red-500 text-[11px]">{errors.title.message}</p>
+          )}
         </Field>
 
         {/* Amount */}
         <Field>
           <Label>Amount</Label>
-          <Input
-            type="number"
-            {...register("amount")}
-            placeholder="0.00"
-          />
-          {errors.amount && <p className="text-red-500 text-[11px]">{errors.amount.message}</p>}
+          <Input type="number" {...register("amount")} placeholder="0.00" />
+          {errors.amount && (
+            <p className="text-red-500 text-[11px]">{errors.amount.message}</p>
+          )}
         </Field>
 
         {/* Category Selection */}
         <Field>
           <Label>Category</Label>
-          <Select 
-            value={currentCategory} 
+          <Select
+            value={currentCategory}
             onValueChange={(val) => setValue("category", val as any)}
           >
             <SelectTrigger className="w-full">
@@ -108,12 +116,14 @@ export function EditTransactionForm({ transaction, onSuccess }: { transaction: a
               <SelectItem value="personal">Personal</SelectItem>
               <SelectItem value="medicine">Medicine</SelectItem>
               <SelectItem value="family">Family</SelectItem>
-              <SelectItem value="savings">Savings</SelectItem>
             </SelectContent>
           </Select>
-          {errors.category && <p className="text-red-500 text-[11px]">{errors.category.message}</p>}
+          {errors.category && (
+            <p className="text-red-500 text-[11px]">
+              {errors.category.message}
+            </p>
+          )}
         </Field>
-
       </FieldGroup>
 
       <Button type="submit" className="w-full bg-blue-600" disabled={loading}>

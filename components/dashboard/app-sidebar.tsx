@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import {
   LayoutDashboard,
@@ -8,8 +8,8 @@ import {
   User,
   ShieldCheck,
   ChartNoAxesCombined,
-  LogOut // Logout icon
-} from "lucide-react"
+  LogOut, // Logout icon
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -23,10 +23,10 @@ import {
   SidebarMenuItem,
   SidebarFooter,
   useSidebar,
-} from "@/components/ui/sidebar"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react" // signOut import kora hoyeche
+} from "@/components/ui/sidebar";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react"; // signOut import kora hoyeche
 
 const items = [
   { title: "Home", url: "/user", icon: LayoutDashboard },
@@ -34,42 +34,43 @@ const items = [
   { title: "History", url: "/user/history", icon: History },
   { title: "Savings", url: "/user/savings", icon: PiggyBank },
   { title: "Statement", url: "/user/statement", icon: FileText },
-]
+];
 
-const adminItems = [
-  { title: "Admin Panel", url: "/admin", icon: ShieldCheck },
-]
+const adminItems = [{ title: "Admin Panel", url: "/admin", icon: ShieldCheck }];
 
 export function AppSidebar() {
-  const pathname = usePathname()
-  const { data: session } = useSession()
-  const { setOpenMobile } = useSidebar()
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const { setOpenMobile } = useSidebar();
 
-  const isAdmin = session?.user?.role === "admin"
+  const isAdmin = session?.user?.role === "admin";
 
   const handleLinkClick = () => {
-    setOpenMobile(false)
-  }
+    setOpenMobile(false);
+  };
 
   // Logout function
   const handleLogout = async () => {
-    await signOut({ 
+    await signOut({
       callbackUrl: "/auth",
-      redirect: true 
-    })
-  }
+      redirect: true,
+    });
+  };
 
   return (
-    <Sidebar collapsible="icon" className="transition-all duration-300 ease-in-out">
+    <Sidebar
+      collapsible="icon"
+      className="transition-all duration-300 ease-in-out"
+    >
       <SidebarHeader className="p-4">
-        <div className="flex items-center gap-2">
+        <Link href={"/user"} className="flex items-center gap-2 cursor-pointer">
           <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
             LE
           </div>
           <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
             Life Easy
           </span>
-        </div>
+        </Link>
       </SidebarHeader>
 
       <SidebarContent>
@@ -128,7 +129,7 @@ export function AppSidebar() {
 
           {/* Logout Button */}
           <SidebarMenuItem>
-            <SidebarMenuButton 
+            <SidebarMenuButton
               onClick={handleLogout}
               className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
             >
@@ -139,5 +140,5 @@ export function AppSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

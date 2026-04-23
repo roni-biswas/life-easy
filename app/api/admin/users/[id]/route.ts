@@ -6,17 +6,20 @@ import { NextResponse } from "next/server";
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } },
+  // Type change: params ekhon ekta Promise
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await dbConnect();
-    const { role } = await req.json();
+
+    // Params await kora thik ache
     const { id } = await params;
+    const { role } = await req.json();
 
     const updatedUser = await User.findByIdAndUpdate(
       id,
       { role },
-      { returnDocument: "after" },
+      { new: true }, // 'returnDocument: after' er bodole 'new: true' use kora mongoose e standard
     );
 
     if (!updatedUser) {
@@ -25,6 +28,7 @@ export async function PATCH(
 
     return NextResponse.json(updatedUser);
   } catch (error) {
+    console.error("Admin PATCH Error:", error);
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
   }
 }

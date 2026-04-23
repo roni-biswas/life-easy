@@ -100,11 +100,13 @@ export function RecentTransactions({ data: initialData }: { data: any[] }) {
                   </span>
                 </div>
                 <div className="md:hidden">
-                  <ActionMenu
-                    item={item}
-                    onDeleteSuccess={handleDeleteSuccess}
-                    onUpdateSuccess={handleUpdateSuccess}
-                  />
+                  {item.category !== "savings" && (
+                    <ActionMenu
+                      item={item}
+                      onDeleteSuccess={handleDeleteSuccess}
+                      onUpdateSuccess={handleUpdateSuccess}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -139,11 +141,13 @@ export function RecentTransactions({ data: initialData }: { data: any[] }) {
 
               {/* 5. Desktop Action */}
               <div className="hidden md:flex justify-end">
-                <ActionMenu
-                  item={item}
-                  onDeleteSuccess={handleDeleteSuccess}
-                  onUpdateSuccess={handleUpdateSuccess}
-                />
+                {item.category !== "savings" && (
+                  <ActionMenu
+                    item={item}
+                    onDeleteSuccess={handleDeleteSuccess}
+                    onUpdateSuccess={handleUpdateSuccess}
+                  />
+                )}
               </div>
             </div>
           );
