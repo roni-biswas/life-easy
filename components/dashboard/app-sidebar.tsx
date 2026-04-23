@@ -63,14 +63,14 @@ export function AppSidebar() {
       className="transition-all duration-300 ease-in-out"
     >
       <SidebarHeader className="p-4">
-        <Link href={"/user"} className="flex items-center gap-2 cursor-pointer">
+        <div className="flex items-center gap-2 cursor-default">
           <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold shrink-0">
             LE
           </div>
           <span className="font-bold text-lg group-data-[collapsible=icon]:hidden">
             Life Easy
           </span>
-        </Link>
+        </div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -80,11 +80,11 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.title} className="mb-2.5">
                   <SidebarMenuButton asChild isActive={pathname === item.url}>
                     <Link href={item.url} onClick={handleLinkClick}>
                       <item.icon />
-                      <span>{item.title}</span>
+                      <span className="text-[18px]">{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -104,7 +104,7 @@ export function AppSidebar() {
                     <SidebarMenuButton asChild isActive={pathname === item.url}>
                       <Link href={item.url} onClick={handleLinkClick}>
                         <item.icon />
-                        <span>{item.title}</span>
+                        <span className="text-[18px]">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -118,11 +118,11 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t border-slate-100">
         <SidebarMenu>
           {/* Profile Link */}
-          <SidebarMenuItem>
+          <SidebarMenuItem className="mb-2.5">
             <SidebarMenuButton asChild isActive={pathname === "/user/profile"}>
               <Link href="/user/profile" onClick={handleLinkClick}>
                 <User />
-                <span>Profile</span>
+                <span className="text-[18px]">Profile</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -134,7 +134,7 @@ export function AppSidebar() {
               className="text-red-500 hover:text-red-600 hover:bg-red-50 cursor-pointer"
             >
               <LogOut />
-              <span>Logout</span>
+              <span className="text-[18px]">Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
