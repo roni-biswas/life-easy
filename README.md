@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 💸 Life Easy – Daily Expense & Money Management
 
-## Getting Started
+**Life Easy** is a powerful, multi-user financial tracking web application designed to simplify your daily budgeting. From tracking family costs to monitoring personal savings, this app helps you maintain a clear picture of your financial health every day.
 
-First, run the development server:
+🚀 **Live Demo:** [https://easylife-user.vercel.app](https://easylife-user.vercel.app)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ✨ Key Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- 🔐 **Secure Authentication:** Multi-user support with protected routes and hashed passwords.
+- 📊 **Daily Ledger:** Add income and categorize expenses (Family, Medicine, Personal, etc.) in real-time.
+- 💰 **Savings Tracker:** Dedicated section to monitor your daily or monthly saving goals.
+- 📉 **Automatic Calculations:** Instant calculation of "Total Remaining Balance" based on your daily inputs.
+- 📱 **Modern UI:** Built with a "Mobile First" approach using Shadcn/UI for a clean, professional look.
+- 🛡️ **Data Validation:** Strict client and server-side validation to ensure financial data integrity.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠️ Technical Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** [Next.js](https://nextjs.org/) (App Router)
+- **Language:** [TypeScript](https://www.typescriptlang.org/)
+- **Styling:** [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components:** [Shadcn/UI](https://ui.shadcn.com/)
+- **Database:** [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/)
+- **Form Management:** [React Hook Form](https://react-hook-form.com/)
+- **Validation:** [Zod](https://zod.dev/)
+- **Security:** [Bcrypt](https://www.npmjs.com/package/bcrypt) for secure password hashing
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚀 Getting Started
 
-## Deploy on Vercel
+Follow these steps to run the project locally:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/roni-biswas/life-easy.git](https://github.com/roni-biswas/life-easy.git)
+   cd life-easy
