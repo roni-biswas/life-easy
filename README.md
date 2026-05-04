@@ -36,5 +36,5 @@ Follow these steps to run the project locally:
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/roni-biswas/life-easy.git](https://github.com/roni-biswas/life-easy.git)
+   git clone https://github.com/roni-biswas/life-easy.git
    cd life-easy
